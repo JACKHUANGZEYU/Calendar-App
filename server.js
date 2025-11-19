@@ -8,7 +8,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8787;
 
-app.use(cors());
+// 2. FIX CORS: Allow all origins and specifically the OPTIONS method (Preflight)
+app.use(cors({
+  origin: "*", 
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 app.use(express.json());
 
 // --- 1. The "Brain": Restored Logic for Rename, Color, Urgent ---
