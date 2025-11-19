@@ -382,7 +382,7 @@ async function callAiPlanner(
   tasks: TaskBlock[],
   todayKey: string
 ): Promise<AiAction[]> {
-  const res = await fetch("http://localhost:8787/api/ai-plan", {
+  const res = await fetch("https://calendar-smart.onrender.com/api/ai-plan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt, tasks, todayKey }),
