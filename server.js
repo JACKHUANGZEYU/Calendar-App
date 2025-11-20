@@ -1,55 +1,56 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { buildPrompt } from "./prompts/index.js"; // <--- IMPORT THE NEW BRAIN
+// Import BOTH builders
+import { buildThinkerPrompt, buildImplementerPrompt } from "./prompts/index.js";
 
-dotenv.config();
-
-const app = express();
-const PORT = process.env.PORT || 8787;
-
-app.use(cors({ origin: "*" }));
-app.use(express.json());
+// ... imports and setup ...
 
 app.post("/api/ai-plan", async (req, res) => {
   try {
     const { prompt, tasks, todayKey } = req.body;
-
-    if (!prompt || !Array.isArray(tasks)) {
-      return res.status(400).json({ error: "Invalid input" });
-    }
-
     const apiKey = process.env.GEMINI_API_KEY;
-    
-    // 1. Generate the advanced prompt using our new library
-    const fullPrompt = buildPrompt(prompt, tasks, todayKey);
+    const baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
+    // --- STEP 1: THE THINKER ---
+    console.log("🤔 Step 1: Thinking...");
+    const thinkerText = buildThinkerPrompt(prompt, tasks, todayKey);
+    
+    const thinkRes = await fetch(`${baseUrl}?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-        generationConfig: { response_mime_type: "application/json", temperature: 0.1 },
+        contents: [{ role: "user", parts: [{ text: thinkerText }] }],
+        generationConfig: { temperature: 0.3 } // Slightly creative for planning
+      }),
+    });
+    
+    const thinkData = await thinkRes.json();
+    const plan = thinkData.candidates?.[0]?.content?.parts?.[0]?.text || "No plan generated.";
+    console.log("📝 Plan Created:\n", plan);
+
+    // --- STEP 2: THE IMPLEMENTER ---
+    console.log("🛠️ Step 2: Implementing...");
+    const implementerText = buildImplementerPrompt(plan, tasks);
+
+    const codeRes = await fetch(`${baseUrl}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: implementerText }] }],
+        generationConfig: { response_mime_type: "application/json", temperature: 0.1 } // Strict for code
       }),
     });
 
-    if (!response.ok) throw new Error("Gemini API failed");
-
-    const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    const codeData = await codeRes.json();
+    const content = codeData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     const cleanContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
-    
+
     let parsed = JSON.parse(cleanContent);
     if (!parsed.actions && Array.isArray(parsed)) parsed = { actions: parsed };
 
-    console.log("AI Plan Executed:", parsed.actions);
+    console.log("🚀 Final Actions:", parsed.actions);
     res.json({ actions: parsed.actions || [] });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Server Error:", err);
+    res.status(500).json({ error: "Failed to generate plan" });
   }
 });
-
-app.listen(PORT, () => console.log(`AI Server running on port ${PORT}`));

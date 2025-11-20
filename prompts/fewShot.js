@@ -98,4 +98,62 @@ OUTPUT: { "actions": [
   { "type": "split", "date": "2024-11-10", "title": "Maintenance", "atTime": "24:00" },
   { "type": "setColor", "date": "2024-11-10", "title": "Maintenance", "color": "bg-rose-400" }
 ] }
+
+USER: "Split the Gym task at 2pm"
+EXISTING TASK: { "title": "Gym", "date": "2024-11-10", "start": "13:00", "end": "15:00" }
+OUTPUT: {
+  "thought": "User wants to split Gym (13:00-15:00) at 14:00. 14:00 is within the time window. Using split tool.",
+  "actions": [{ "type": "split", "date": "2024-11-10", "title": "Gym", "atTime": "14:00" }] 
+}
+
+USER: "Delay lunch by 45 minutes"
+EXISTING TASK: { "title": "Lunch", "date": "2024-11-10", "start": "12:00", "end": "13:00" }
+OUTPUT: {
+  "thought": "Delaying implies shifting start and end equally. Delta is +45 minutes.",
+  "actions": [{ "type": "shift", "date": "2024-11-10", "title": "Lunch", "deltaMinutes": 45 }]
+}
+
+USER: "Start lunch 30 mins earlier"
+EXISTING TASK: { "title": "Lunch", "date": "2024-11-10", "start": "12:00", "end": "13:00" }
+OUTPUT: {
+  "thought": "Starting earlier without mentioning duration change implies resizing (making it longer) or shifting? User said 'start earlier', usually implies keeping the same meal time duration unless specified. However, strict tool rule: 'start earlier' implies shift if duration not mentioned. BUT if user implies extending the block to start earlier, we use resize. Let's assume shift for simple movement, but if phrasing implies 'make it start at X', it is resize. Here, 'start 30 mins earlier' usually means shifting the whole block. Correction: In this system, 'start earlier' is a Shift. ",
+  "actions": [{ "type": "shift", "date": "2024-11-10", "title": "Lunch", "deltaMinutes": -30 }]
+}
+
+USER: "Extend the lunch time by 1 hour"
+EXISTING TASK: { "title": "Lunch", "date": "2024-11-10", "start": "12:00", "end": "13:00" }
+OUTPUT: {
+  "thought": "Extend means changing duration. Extend by 1 hour means adding 60 mins to the end. New end = 14:00.",
+  "actions": [{ "type": "resize", "date": "2024-11-10", "title": "Lunch", "newEnd": "14:00" }] 
+}
+
+USER: "Push the gym session back by an hour, and split the coding block at 3pm."
+EXISTING TASKS:
+- { "title": "Gym", "date": "2024-11-10", "start": "07:00", "end": "08:00" }
+- { "title": "Coding", "date": "2024-11-10", "start": "13:00", "end": "16:00" }
+OUTPUT: {
+  "thought": "Request 1: Push Gym back 1 hr (Shift +60). Request 2: Split Coding (13:00-16:00) at 15:00. Both are valid.",
+  "actions": [
+    { "type": "shift", "date": "2024-11-10", "title": "Gym", "deltaMinutes": 60 },
+    { "type": "split", "date": "2024-11-10", "title": "Coding", "atTime": "15:00" }
+  ]
+}
+
+USER: "Take a 30-minute break at 11 during study"
+EXISTING TASK: { "title": "Study", "date": "2024-11-10", "start": "08:00", "end": "12:00" }
+OUTPUT: {
+  "thought": "Insert exclusive task. 1. Resize Study to end at 11:00. 2. Add Break 11:00-11:30. 3. Add remaining Study (1h) from 11:30-12:30.",
+  "actions": [
+    { "type": "resize", "date": "2024-11-10", "title": "Study", "newEnd": "11:00" },
+    { "type": "add", "title": "Break", "date": "2024-11-10", "start": "11:00", "end": "11:30" },
+    { "type": "add", "title": "Study", "date": "2024-11-10", "start": "11:30", "end": "12:30" }
+  ]
+}
+
+USER: "Make basketball an hour longer and also start it 30 minutes earlier"
+EXISTING TASK: { "title": "Basketball", "date": "2024-11-10", "start": "07:00", "end": "08:00" }
+OUTPUT: {
+  "thought": "Total duration increase = 60 mins. Start shift = -30 mins. Old Start 07:00 -> New Start 06:30. Remaining expansion (30 mins) goes to end. Old End 08:00 -> New End 08:30.",
+  "actions": [{ "type": "resize", "date": "2024-11-10", "title": "Basketball", "newStart": "06:30", "newEnd": "08:30" }]
+}
 `;

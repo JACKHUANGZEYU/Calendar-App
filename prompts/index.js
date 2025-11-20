@@ -1,6 +1,6 @@
-import { SYSTEM_ROLE } from "./systemRole.js";
+import { THINKER_ROLE } from "./thinker.js";
+import { IMPLEMENTER_ROLE } from "./implementer.js";
 import { AVAILABLE_TOOLS } from "./tools.js";
-import { FEW_SHOT_EXAMPLES } from "./fewShot.js";
 
 // Helper to make units readable (0-48 -> "09:30")
 function formatUnitToTime(unit) {
@@ -11,11 +11,8 @@ function formatUnitToTime(unit) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-export function buildPrompt(userPrompt, tasks, todayKey) {
-  // 1. Prepare Context (Dynamic Data)
-  const today = todayKey || new Date().toISOString().slice(0, 10);
-  
-  const readableTasks = tasks.map(t => ({
+function getReadableTasks(tasks) {
+  return tasks.map(t => ({
     id: t.id,
     title: t.title,
     date: t.date,
@@ -23,23 +20,38 @@ export function buildPrompt(userPrompt, tasks, todayKey) {
     end: formatUnitToTime(t.endHour),
     urgent: t.urgent
   }));
+}
 
-  // 2. Assemble the Mega-Prompt
-  // NOTE: No backslashes before the backticks below!
+// --- Pass 1: The Thinker ---
+export function buildThinkerPrompt(userPrompt, tasks, todayKey) {
+  const today = todayKey || new Date().toISOString().slice(0, 10);
   return `
-${SYSTEM_ROLE}
-
-${AVAILABLE_TOOLS}
-
-${FEW_SHOT_EXAMPLES}
+${THINKER_ROLE}
 
 ### LIVE CONTEXT
 - Today: ${today}
-- Existing Tasks: ${JSON.stringify(readableTasks, null, 2)}
+- Existing Tasks: ${JSON.stringify(getReadableTasks(tasks), null, 2)}
 
 ### USER REQUEST
 "${userPrompt}"
 
-### YOUR JSON RESPONSE:
+### YOUR LOGICAL PLAN:
+`;
+}
+
+// --- Pass 2: The Implementer ---
+export function buildImplementerPrompt(plan, tasks) {
+  return `
+${IMPLEMENTER_ROLE}
+
+${AVAILABLE_TOOLS}
+
+### CONTEXT (Reference Only)
+- Existing Tasks: ${JSON.stringify(getReadableTasks(tasks), null, 2)}
+
+### LOGICAL PLAN (Execute This)
+${plan}
+
+### YOUR JSON ACTIONS:
 `;
 }
