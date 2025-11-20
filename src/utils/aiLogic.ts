@@ -6,8 +6,10 @@ export async function callAiPlanner(
   tasks: TaskBlock[],
   todayKey: string
 ): Promise<AiAction[]> {
-  // Make sure this URL matches your running server
-  const res = await fetch("http://localhost:8787/api/ai-plan", {
+  // Use the Environment Variable if it exists (Production), otherwise use localhost (Development)
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787";
+
+  const res = await fetch(`${API_URL}/api/ai-plan`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt, tasks, todayKey }),
