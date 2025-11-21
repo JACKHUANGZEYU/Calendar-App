@@ -40,13 +40,15 @@ ${THINKER_ROLE}
 }
 
 // --- Pass 2: The Implementer ---
-export function buildImplementerPrompt(plan, tasks) {
+export function buildImplementerPrompt(plan, tasks, todayKey) {
+  const today = todayKey || new Date().toISOString().slice(0, 10);
   return `
 ${IMPLEMENTER_ROLE}
 
 ${AVAILABLE_TOOLS}
 
 ### CONTEXT (Reference Only)
+- Today: ${today}
 - Existing Tasks: ${JSON.stringify(getReadableTasks(tasks), null, 2)}
 
 ### LOGICAL PLAN (Execute This)

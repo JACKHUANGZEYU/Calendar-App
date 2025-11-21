@@ -247,14 +247,23 @@ const App: React.FC = () => {
     try {
       setAiStatus("loading");
       setAiError(null);
-      const actions = await callAiPlanner(aiPrompt, tasks, todayKey);
-      console.log("AI actions from backend:", actions);
-      setTasks((prev) => applyAiPlan(actions, prev));
+
+      // CRITICAL: Use 'centerDateKey' (The date currently in the middle of your screen)
+      // This fixes the 2024 vs 2025 bug.
+      const targetDate = centerDateKey; 
+
+      console.log(`🧠 Sending AI request for date: ${targetDate}`);
+
+      const actions = await callAiPlanner(aiPrompt, tasks, targetDate);
+      
+      // Pass targetDate to applyAiPlan so if the AI forgets the date, we use this one.
+      setTasks((prev) => applyAiPlan(actions, prev, targetDate));
+      
       setAiStatus("done");
     } catch (err) {
       console.error(err);
       setAiStatus("error");
-      setAiError("AI request failed. Check console/backend.");
+      setAiError("AI request failed. Check console.");
     }
   };
 
@@ -319,8 +328,11 @@ const App: React.FC = () => {
               <button className="px-2 text-sm rounded hover:bg-slate-100" onClick={() => handleMonthChange(1)}>›</button>
             </div>
             <div className="grid grid-cols-7 text-[11px] text-slate-500 mb-1">
-              {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                <div key={d} className="h-6 flex items-center justify-center">{d}</div>
+              {/* We use 'i' (index) as the key because 'S' and 'T' are duplicates */}
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                <div key={i} className="h-6 flex items-center justify-center">
+                  {d}
+                </div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-[2px] text-xs">
